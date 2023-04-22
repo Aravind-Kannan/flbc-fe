@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import FederatedLearning from "./contracts/FederatedLearning.json";
 
+const provider = new ethers.BrowserProvider(window.ethereum);
+
 function App() {
   const [contract, setContract] = useState(null);
   const [account, setAccount] = useState("");
@@ -12,17 +14,7 @@ function App() {
   useEffect(() => {
     const init = async () => {
       // Load the smart contract
-      console.log(process.env);
-      console.log(process.env.REACT_APP_PRIVATE_KEY);
-      const provider = ethers.getDefaultProvider(
-        process.env.REACT_APP_PROVIDER_URL
-      );
-      console.log(provider);
-      const signer = new ethers.Wallet(
-        process.env.REACT_APP_PRIVATE_KEY,
-        provider
-      );
-      console.log(signer);
+      const signer = await provider.getSigner();
 
       const contractAddress = process.env.REACT_APP_CONTRACT_ADDRESS;
       const contract = new ethers.Contract(
@@ -32,7 +24,8 @@ function App() {
       );
       const contractWithSigner = contract.connect(signer);
       setContract(contractWithSigner);
-      setAccount(signer.address);
+      const address = await signer.getAddress();
+      setAccount(address);
     };
 
     init();
