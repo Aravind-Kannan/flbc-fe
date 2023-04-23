@@ -7,7 +7,7 @@ const provider = new ethers.BrowserProvider(window.ethereum);
 function App() {
   const [contract, setContract] = useState(null);
   const [account, setAccount] = useState("");
-  const [initiatorIP, setInitiatorIP] = useState("");
+  const [initiatorIP, setInitiatorIP] = useState("<IP Address>");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -143,30 +143,75 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <h1>Federated Learning</h1>
+    <div className="flex items-center justify-center bg-gray-500 min-h-screen">
+      <div className="m-8 p-5 bg-black shadow-2xl rounded-lg text-white text-center">
+        <h1
+          className="text-5xl
+        font-semibold p-8"
+        >
+          Federated Learning 🤝 Blockchain
+        </h1>
 
-      <p>Connected wallet address: {account}</p>
+        <p className="py-10 font-medium">
+          Connected wallet address:{" "}
+          <div className="bg-orange-500 rounded-3xl p-2 font-light font-mono mx-32">
+            {account}
+          </div>
+        </p>
 
-      <button onClick={registerClient}>Join to network</button>
-      {errors && "register_client" in errors && errors["register_client"]}
+        <div className="flex flex-col gap-5">
+          <button
+            className="bg-indigo-500 p-3 hover:bg-indigo-800 rounded-xl mx-32"
+            onClick={registerClient}
+          >
+            Join to network
+          </button>
+          {/* {errors && "register_client" in errors && errors["register_client"]} */}
 
-      <button onClick={initiateRound}>Initiate a round</button>
+          <button
+            className="bg-green-500 p-3 hover:bg-green-800 rounded-xl mx-32"
+            onClick={initiateRound}
+          >
+            Initiate a round
+          </button>
 
-      <div>
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => setConsent(e.target.checked)}
-        />
-        <label>Give consent to participate</label>
-        <button onClick={giveConsent}>Submit</button>
+          <div className="hover:bg-gray-800 p-2 rounded-xl mx-32">
+            <input
+              className="w-4 h-4 text-blue-800 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <label className="pl-5">Give consent to participate</label>
+            <button
+              className="bg-indigo-500 p-3 ml-6 hover:bg-indigo-800 rounded-xl"
+              onClick={giveConsent}
+            >
+              Submit
+            </button>
+          </div>
+
+          <div
+            className="
+          hover:bg-gray-800 p-4 rounded-xl mx-32"
+          >
+            <p>Initiator IP address: {initiatorIP}</p>
+            <button
+              className="bg-green-500 p-3 mt-5 hover:bg-green-800 rounded-xl"
+              onClick={getInitiatorIP}
+            >
+              Get initiator IP address
+            </button>
+          </div>
+
+          <button
+            className="bg-red-500 p-3 hover:bg-red-800 rounded-xl mx-32"
+            onClick={cleanupRound}
+          >
+            Cleanup round
+          </button>
+        </div>
       </div>
-
-      <button onClick={getInitiatorIP}>Get initiator IP address</button>
-      <p>Initiator IP address: {initiatorIP}</p>
-
-      <button onClick={cleanupRound}>Cleanup round</button>
     </div>
   );
 }
