@@ -9,9 +9,33 @@ function App() {
   const [account, setAccount] = useState("");
   const [initiatorIP, setInitiatorIP] = useState("");
   const [consent, setConsent] = useState(false);
-  console.log(process.env);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    function clientRegisteredListener(clientAddress, event) {
+      console.log("BREAKING NEWS: ClientRegistered", clientAddress, event);
+    }
+
+    function federatedLearningRoundInitiatedListener(clientAddress, event) {
+      console.log(
+        "BREAKING NEWS: FederatedLearningRoundInitiated",
+        clientAddress,
+        event
+      );
+    }
+
+    function clientConsentedListener(clientAddress, event) {
+      console.log("BREAKING NEWS: ClientConsented", clientAddress, event);
+    }
+
+    function federatedLearningRoundCompletedListener(clientAddress, event) {
+      console.log(
+        "BREAKING NEWS: FederatedLearningRoundCompleted",
+        clientAddress,
+        event
+      );
+    }
+
     const init = async () => {
       // Load the smart contract
       const signer = await provider.getSigner();
@@ -23,28 +47,75 @@ function App() {
         signer
       );
       const contractWithSigner = contract.connect(signer);
+
+      console.log(contractWithSigner);
+
+      contractWithSigner.on("ClientRegistered", clientRegisteredListener);
+      contractWithSigner.on(
+        "FederatedLearningRoundInitiated",
+        federatedLearningRoundInitiatedListener
+      );
+      contractWithSigner.on("ClientConsented", clientConsentedListener);
+      contractWithSigner.on(
+        "FederatedLearningRoundCompleted",
+        federatedLearningRoundCompletedListener
+      );
+
       setContract(contractWithSigner);
       const address = await signer.getAddress();
       setAccount(address);
     };
 
     init();
+
+    return () => {
+      if (contract) {
+        contract.off("ClientRegistered", clientRegisteredListener);
+        contract.off(
+          "FederatedLearningRoundInitiated",
+          federatedLearningRoundInitiatedListener
+        );
+        contract.off("ClientConsented", clientConsentedListener);
+        contract.off(
+          "FederatedLearningRoundCompleted",
+          federatedLearningRoundCompletedListener
+        );
+      }
+    };
   }, []);
 
   const registerClient = async () => {
-    const tx = await contract.register();
-    await tx.wait();
-    console.log("Client registered: ", tx.hash);
+    try {
+      const tx = await contract.register();
+      await tx.wait();
+      console.log("Client registered: ", tx.hash);
+    } catch (err) {
+      const code = err.data.replace("Reverted ", "");
+      console.log({ err });
+      let reason = ethers.toUtf8String("0x" + code.substr(138));
+      reason = reason.replace(/\0/g, "");
+      setErrors((prevState) => {
+        return { ...prevState, register_client: reason };
+      });
+    }
   };
 
   const initiateRound = async () => {
-    const ipAddress = "192.168.0.1"; // replace with the client's IP address
-    const tx = await contract.initiate(ipAddress);
+    console.log(await contract.listeners("FederatedLearningRoundInitiated"));
+    let response = await fetch(
+      "http://127.0.0.1:5000/jobs/initiator/address"
+    ).then((response) => response.json());
+    console.log(response.address);
+    const tx = await contract.initiate(response.address);
     await tx.wait();
     console.log("Round initiated: ", tx.hash);
+    await fetch("http://127.0.0.1:5000/jobs/initiator", {
+      method: "post",
+    });
   };
 
   const giveConsent = async () => {
+    console.log(await contract.listeners("ClientConsented"));
     const tx = await contract.participate(consent);
     await tx.wait();
     console.log("Consent given: ", tx.hash);
@@ -53,9 +124,20 @@ function App() {
   const getInitiatorIP = async () => {
     const ip = await contract.getInitiatorIP(account);
     setInitiatorIP(ip);
+    const res = await fetch("http://127.0.0.1:5000/jobs/client", {
+      method: "post",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        address: ip,
+      }),
+    });
+    console.log(res);
   };
 
   const cleanupRound = async () => {
+    console.log(await contract.listeners("FederatedLearningRoundCompleted"));
     const tx = await contract.cleanup();
     await tx.wait();
   };
@@ -66,7 +148,8 @@ function App() {
 
       <p>Connected wallet address: {account}</p>
 
-      <button onClick={registerClient}>Register as a client</button>
+      <button onClick={registerClient}>Join to network</button>
+      {errors && "register_client" in errors && errors["register_client"]}
 
       <button onClick={initiateRound}>Initiate a round</button>
 
