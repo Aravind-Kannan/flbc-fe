@@ -152,12 +152,12 @@ function App() {
           Federated Learning 🤝 Blockchain
         </h1>
 
-        <p className="py-10 font-medium">
+        <div className="py-10 font-medium">
           Connected wallet address:{" "}
           <div className="bg-orange-500 rounded-3xl p-2 font-light font-mono mx-32">
             {account}
           </div>
-        </p>
+        </div>
 
         <div className="flex flex-col gap-5">
           <button
